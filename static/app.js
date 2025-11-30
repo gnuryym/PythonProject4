@@ -16,6 +16,16 @@ function showPage(id) {
     if (id === 'profile') renderProfile();
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    const registerBtn = document.getElementById("register-btn");
+
+    registerBtn.addEventListener("click", () => {
+        alert("Переходим к регистрации!");
+        // сюда добавьте логику формы регистрации
+    });
+});
+
+
 async function register() {
     const name = document.getElementById('regName').value.trim();
     const pass = document.getElementById('regPass').value;

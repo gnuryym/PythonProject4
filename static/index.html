@@ -168,5 +168,15 @@
 <!-- Подключение JS -->
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const registerBtn = document.getElementById("register-btn");
+
+    registerBtn.addEventListener("click", () => {
+        alert("Переходим к регистрации!");
+    });
+});
+</script>
+
 </body>
 </html>
