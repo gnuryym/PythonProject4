@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Infinity – поиск специалистов для стартапа</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Braah+One&family=Inter:wght@400;500;600&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #A1C4FD 0%, #C2E9FB 100%);
+    min-height: 100vh;
+    color:#000;
+}
+
+.header {
+    height:90px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid #ddd;
+    position: fixed;
+    top:0; left:0; right:0;
+    z-index:1000;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 60px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.08);
+}
+.logo {
+    width:70px;
+    height:70px;
+    background: url('Infinity.png') center/contain no-repeat;
+}
+.nav {
+    display:flex;
+    justify-content:center;
+    flex:1;
+    gap:80px;
+    font-size:19px;
+    font-weight:500;
+}
+.nav a {
+    text-decoration:none;
+    color:#333;
+    padding:12px 20px;
+    border-radius:12px;
+    transition:all 0.3s;
+    position:relative;
+}
+.nav a:hover {
+    background: rgba(91,134,229,0.1);
+    color:#5B86E5;
+}
+.nav a.active {
+    color:#5B86E5;
+    font-weight:600;
+}
+.nav a.active::after {
+    content:'';
+    position:absolute;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:40px;
+    height:4px;
+    background:#5B86E5;
+    border-radius:2px;
+}
+
+.content {
+    margin-top:110px;
+    padding:40px 60px;
+    max-width:1600px;
+    margin-left:auto;
+    margin-right:auto;
+}
+.page { display:none; }
+.page.active { display:block; }
+
+.users-grid, .favorites-grid, .chat-list {
+    display:grid;
+    grid-template-columns: repeat(auto-fill,minmax(420px,1fr));
+    gap:30px;
+    margin-top:30px;
+}
+.card {
+    background:#fff;
+    border-radius:28px;
+    padding:32px;
+    display:flex;
+    align-items:center;
+    gap:28px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    transition:all 0.4s ease;
+    height:180px;
+}
+.card:hover { transform:translateY(-10px); box-shadow:0 20px 40px rgba(0,0,0,0.18); }
+.card img { width:110px; height:110px; border-radius:50%; object-fit:cover; border:4px solid #f0f0f0; }
+.card-info h3 { font-size:26px; margin-bottom:8px; font-weight:600; }
+.card-info p { font-size:17px; color:#555; line-height:1.5; }
+.card-actions { margin-left:auto; display:flex; flex-direction:column; gap:18px; }
+.card-actions img { width:40px; height:40px; cursor:pointer; transition:0.3s; }
+.card-actions img:hover { transform:scale(1.15); }
+
+.profile-page {
+    background: rgba(255,255,255,0.97);
+    border-radius:32px;
+    padding:60px;
+    max-width:600px;
+    margin:40px auto;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,0.15);
+}
+.profile-page .avatar {
+    width:260px; height:260px;
+    border-radius:50%;
+    margin:0 auto 40px;
+    background: url('DockLee.png') center/cover no-repeat;
+    border:12px solid #fff;
+    box-shadow:0 20px 40px rgba(0,0,0,0.2);
+}
+.profile-field {
+    background:#F8F9FF;
+    border-radius:28px;
+    padding:22px 32px;
+    margin:20px 0;
+    font-size:19px;
+    text-align:left;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-weight:500;
+}
+
+.chat-window {
+    background: rgba(255,255,255,0.97);
+    border-radius:32px;
+    padding:50px;
+    height: calc(100vh - 180px);
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 20px 50px rgba(0,0,0,0.15);
+}
+.chat-messages { flex:1; overflow-y:auto; padding:20px 0; }
+.message { max-width:70%; padding:16px 24px; border-radius:24px; margin:12px 0; font-size:17px; line-height:1.5; }
+.message.me { background:#5B86E5; color:white; margin-left:auto; border-bottom-right-radius:6px; }
+.message.other { background:#F0F2F5; margin-right:auto; border-bottom-left-radius:6px; }
+
+.auth-container {
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+}
+.auth-card {
+    background:#fff;
+    border-radius:32px;
+    padding:70px 90px;
+    max-width:560px;
+    text-align:center;
+    box-shadow:0 30px 70px rgba(0,0,0,0.2);
+}
+.auth-card h1 {
+    font-family:'Braah One', sans-serif;
+    font-size:26px;
+    line-height:1.6;
+    margin-bottom:50px;
+    color:#333;
+}
+.auth-card input, .auth-card select {
+    width:100%;
+    padding:20px;
+    margin:18px 0;
+    border:none;
+    border-bottom:3px solid #ddd;
+    font-size:19px;
+    background:transparent;
+    transition:0.3s;
+}
+.auth-card input:focus, .auth-card select:focus { border-color:#5B86E5; }
+.blue-btn {
+    background:#5B86E5;
+    color:white;
+    border:none;
+    padding:20px;
+    width:100%;
+    border-radius:16px;
+    font-size:20px;
+    margin-top:40px;
+    cursor:pointer;
+    font-weight:600;
+    transition:0.3s;
+}
+.blue-btn:hover { background:#4a75d0; transform:translateY(-2px); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo"></div>
+    <div class="nav">
+        <a onclick="showPage('main')" class="active">Главная</a>
+        <a onclick="showPage('profile')">Профиль</a>
+        <a onclick="showPage('chats')">Чаты</a>
+        <a onclick="showPage('favorites')">Избранные</a>
+    </div>
+    <div style="width:70px;"></div>
+</div>
+
+<div id="login" class="page active">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1>Need specialists for your start up?<br>Infinity will help you</h1>
+            <h2 style="font-size:32px;margin-bottom:50px;">Войти</h2>
+            <input type="text" id="loginName" placeholder="Никнейм">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button class="blue-btn" onclick="login()">Войти</button>
+            <p style="margin-top:30px;color:#666;font-size:16px;">
+                Нет аккаунта? <a href="#" onclick="showPage('register')" style="color:#5B86E5;font-weight:600;">Зарегистрироваться</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div id="register" class="page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1>Need specialists for your start up?<br>Infinity will help you</h1>
+            <h2 style="font-size:32px;margin-bottom:50px;">Регистрация</h2>
+            <input type="text" id="regName" placeholder="Никнейм">
+            <input type="password" id="regPass" placeholder="Пароль">
+            <select id="regRole">
+                <option>Стартапер</option>
+                <option>Программист</option>
+                <option>Дизайнер</option>
+                <option>Маркетолог</option>
+            </select>
+            <button class="blue-btn" onclick="register()">Зарегистрироваться</button>
+        </div>
+    </div>
+</div>
+
+<div id="main" class="page">
+    <div class="content">
+        <h1 style="font-size:32px;margin-bottom:20px;">Найдите идеального специалиста</h1>
+        <input id="searchInput" placeholder="Поиск по имени или технологии..."
+               style="width:100%;padding:14px;border-radius:12px;border:2px solid #e6e6e6;font-size:16px;margin-bottom:12px;">
+        <select id="filterRole"
+                style="width:100%;padding:14px;border-radius:12px;border:2px solid #e6e6e6;font-size:16px;margin-bottom:20px;">
+            <option value="">Все профессиональности</option>
+            <option>Back-end разработчик</option>
+            <option>UI/UX Дизайнер</option>
+            <option>Fullstack разработчик</option>
+            <option>Маркетолог</option>
+        </select>
+        <div class="users-grid" id="usersList">
+            <!-- Примеры с фото -->
+            <div class="card">
+                <img src="user1.jpg" alt="User">
+                <div class="card-info">
+                    <h3>Алексей</h3>
+                    <p>Fullstack разработчик</p>
+                </div>
+                <div class="card-actions">
+                    <img src="heart.png" alt="Favorite" title="Добавить в избранное">
+                    <img src="chat.png" alt="Chat" title="Начать чат">
+                </div>
+            </div>
+            <div class="card">
+                <img src="user2.jpg" alt="User">
+                <div class="card-info">
+                    <h3>Мария</h3>
+                    <p>UI/UX Дизайнер</p>
+                </div>
+                <div class="card-actions">
+                    <img src="heart.png" alt="Favorite" title="Добавить в избранное">
+                    <img src="chat.png" alt="Chat" title="Начать чат">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="profile" class="page">
+    <div class="content">
+        <div class="profile-page">
+            <div class="avatar" style="background:url('user1.jpg') center/cover;"></div>
+            <div class="profile-field"><span>Имя:</span> <strong id="profName">Алексей</strong></div>
+            <div class="profile-field"><span>Роль:</span> <strong id="profRole">Fullstack разработчик</strong></div>
+            <div class="profile-field"><span>Технологии:</span> <strong id="profTech">Python, React</strong></div>
+            <button class="blue-btn" style="margin-top:30px;" onclick="logout()">Выйти из аккаунта</button>
+        </div>
+    </div>
+</div>
+
+<div id="chats" class="page">
+    <div class="content">
+        <h1 style="font-size:32px;margin-bottom:30px;">Ваши чаты</h1>
+        <div class="chat-list" id="chatList">
+            <!-- Пример чата -->
+            <div class="card">
+                <img src="user2.jpg" alt="User">
+                <div class="card-info">
+                    <h3>Мария</h3>
+                    <p>UI/UX Дизайнер</p>
+                </div>
+                <div class="card-actions">
+                    <img src="chat.png" alt="Chat" title="Открыть чат">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="favorites" class="page">
+    <div class="content">
+        <h1 style="font-size:32px;margin-bottom:30px;">Избранные специалисты</h1>
+        <div class="favorites-grid" id="favList">
+            <!-- Пример избранного -->
+            <div class="card">
+                <img src="user2.jpg" alt="User">
+                <div class="card-info">
+                    <h3>Мария</h3>
+                    <p>UI/UX Дизайнер</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

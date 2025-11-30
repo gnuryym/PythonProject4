@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Infinity – профиль пользователя</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+    <div class="logo"></div>
+    <div class="nav">
+        <a onclick="showPage('main')">Главная</a>
+        <a class="active">Профиль</a>
+        <a onclick="showPage('chats')">Чаты</a>
+        <a onclick="showPage('favorites')">Избранные</a>
+    </div>
+    <div style="width:70px;"></div>
+</div>
+
+<div class="content" style="margin-top:120px; max-width:900px; margin-left:auto; margin-right:auto;">
+    <div class="profile-page">
+        <div class="avatar" id="profAvatar" style="background:url('DockLee.png') center/cover;"></div>
+        <div class="profile-field"><span>Имя:</span> <strong id="profName">—</strong></div>
+        <div class="profile-field"><span>Роль:</span> <strong id="profRole">—</strong></div>
+        <div class="profile-field"><span>Технологии:</span> <strong id="profTech">—</strong></div>
+        <div class="profile-field"><span>Портфолио:</span>
+            <div id="profPortfolio" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;"></div>
+        </div>
+        <div class="profile-field"><span>Избранное:</span>
+            <div id="profFavs" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;"></div>
+        </div>
+        <button class="blue-btn" style="margin-top:30px;" onclick="logout()">Выйти из аккаунта</button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+function renderUserPage() {
+    if (!currentUser) return;
+
+    document.getElementById('profName').textContent = currentUser.name;
+    document.getElementById('profRole').textContent = currentUser.role;
+    document.getElementById('profTech').textContent = currentUser.tech || '—';
+    document.getElementById('profAvatar').style.background = `url('${currentUser.avatar || 'DockLee.png'}') center/cover`;
+
+    // Портфолио
+    const port = document.getElementById('profPortfolio');
+    port.innerHTML = '';
+    (currentUser.portfolio || []).forEach(p => {
+        const img = document.createElement('img');
+        img.src = p;
+        img.style.width = '120px';
+        img.style.height = '120px';
+        img.style.borderRadius = '16px';
+        img.style.objectFit = 'cover';
+        port.appendChild(img);
+    });
+
+    // Избранное
+    const favs = document.getElementById('profFavs');
+    favs.innerHTML = '';
+    const allUsers = getAllUsers();
+    (currentUser.fav || []).forEach(name => {
+        const u = allUsers.find(x => x.name === name);
+        if (!u) return;
+        const img = document.createElement('img');
+        img.src = u.avatar || 'DockLee.png';
+        img.title = u.name;
+        img.style.width = '60px';
+        img.style.height = '60px';
+        img.style.borderRadius = '50%';
+        img.style.objectFit = 'cover';
+        favs.appendChild(img);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', renderUserPage);
+</script>
+</body>
+</html>
