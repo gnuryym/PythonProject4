@@ -1,3 +1,7 @@
+import collections.abc
+import collections
+collections.Iterable = collections.abc.Iterable
+
 from flask import Flask, request, jsonify, send_from_directory
 import json, os
 from flask_cors import CORS
