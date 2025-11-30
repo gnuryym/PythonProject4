@@ -1,207 +1,222 @@
-// app.js
-
 let currentUser = null;
 let currentChatWith = null;
 
-const demoUsers = [
-    {name:"Абильмансур", role:"Back-end разработчик", tech:"Python, Go, C#", avatar:"user1.jpg", fav:[]},
-    {name:"Мейржан", role:"UI/UX Дизайнер", tech:"Figma, Canva, Adobe XD", avatar:"user2.jpg", fav:[]},
-    {name:"Рустем", role:"Fullstack разработчик", tech:"React, Node.js, MongoDB", avatar:"user3.jpg", fav:[]},
-    {name:"Даниил", role:"Маркетолог", tech:"SMM, SEO, Google Ads", avatar:"user4.jpg", fav:[]}
-];
-
-function getAllUsers() { return JSON.parse(localStorage.getItem('inf_users_v3') || '[]'); }
-function saveAllUsers(u) { localStorage.setItem('inf_users_v3', JSON.stringify(u)); }
-function getMessages() { return JSON.parse(localStorage.getItem('inf_messages_v3') || '[]'); }
-function saveMessages(m) { localStorage.setItem('inf_messages_v3', JSON.stringify(m)); }
-
-if (!getAllUsers().length) saveAllUsers(demoUsers);
-
-const savedUser = localStorage.getItem('inf_current_v3');
-if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    showPage('main');
-} else {
-    showPage('login');
-}
-
-function showPage(id){
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
-    if(id!=='login' && id!=='register' && id!=='chatOpen'){
-        const navLink=document.querySelector(`.nav a[onclick="showPage('${id}')"]`);
-        if(navLink) navLink.classList.add('active');
+
+    document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+    if (id !== 'login' && id !== 'register' && id !== 'chatOpen') {
+        document.querySelector(`.nav a[onclick="showPage('${id}')"]`)?.classList.add('active');
     }
-    if(id==='main') renderUsers();
-    if(id==='favorites') renderFavorites();
-    if(id==='chats') renderChatList();
-    if(id==='profile') renderProfile();
+
+    if (id === 'main') renderUsers();
+    if (id === 'favorites') renderFavorites();
+    if (id === 'chats') renderChatList();
+    if (id === 'profile') renderProfile();
 }
 
-function register(){
-    const name=document.getElementById('regName').value.trim();
-    const pass=document.getElementById('regPass').value;
-    const role=document.getElementById('regRole').value;
-    if(!name || !pass) return alert('Заполните все поля!');
-    let users=getAllUsers();
-    if(users.find(u=>u.name===name)) return alert('Такой ник уже занят!');
-    const newUser={name, pass, role, tech:'', fav:[]};
-    users.push(newUser);
-    saveAllUsers(users);
-    currentUser=newUser;
-    localStorage.setItem('inf_current_v3', JSON.stringify(newUser));
-    alert('Добро пожаловать, '+name+'!');
-    showPage('main');
+async function register() {
+    const name = document.getElementById('regName').value.trim();
+    const pass = document.getElementById('regPass').value;
+    const role = document.getElementById('regRole').value;
+    if (!name || !pass) return alert('Заполните все поля!');
+
+    try {
+        const res = await fetch('/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, pass, role })
+        });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+
+        currentUser = data.user;
+        localStorage.setItem('inf_current', JSON.stringify(currentUser));
+        showPage('main');
+    } catch (err) {
+        console.error(err);
+        alert('Ошибка регистрации');
+    }
 }
 
-function login(){
-    const name=document.getElementById('loginName').value.trim();
-    const pass=document.getElementById('loginPass').value;
-    const users=getAllUsers();
-    const user=users.find(u=>u.name===name && u.pass===pass);
-    if(!user) return alert('Неверный логин или пароль!');
-    currentUser=user;
-    localStorage.setItem('inf_current_v3', JSON.stringify(user));
-    showPage('main');
+async function login() {
+    const name = document.getElementById('loginName').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!name || !pass) return alert('Введите логин и пароль!');
+
+    try {
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, pass })
+        });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+
+        currentUser = data.user;
+        localStorage.setItem('inf_current', JSON.stringify(currentUser));
+        showPage('main');
+    } catch (err) {
+        console.error(err);
+        alert('Ошибка входа');
+    }
 }
 
-function logout(){
-    localStorage.removeItem('inf_current_v3');
-    currentUser=null;
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('inf_current');
     showPage('login');
 }
 
-function renderUsers(){
-    const list=document.getElementById('usersList');
-    list.innerHTML='';
-    if(!currentUser) return;
-    const q=(document.getElementById('searchInput')?.value || '').toLowerCase();
-    const roleFilter=document.getElementById('filterRole')?.value || '';
-    getAllUsers().forEach(u=>{
-        if(u.name===currentUser.name) return;
-        const name=u.name.toLowerCase();
-        const tech=(u.tech||'').toLowerCase();
-        if(q && !name.includes(q) && !tech.includes(q)) return;
-        if(roleFilter && u.role!==roleFilter) return;
-        const isFav=(currentUser.fav||[]).includes(u.name);
-        const avatar=u.avatar||'DockLee.png';
-        const div=document.createElement('div');
-        div.className='card';
-        div.innerHTML=`
-            <img src="${avatar}" onerror="this.onerror=null;this.src='DockLee.png';">
+async function fetchAllUsers() {
+    const res = await fetch('/users');
+    return res.json();
+}
+
+async function renderUsers() {
+    const list = document.getElementById('usersList');
+    list.innerHTML = '';
+    if (!currentUser) return;
+
+    const allUsers = await fetchAllUsers();
+    const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+    const roleFilter = document.getElementById('filterRole')?.value || '';
+
+    allUsers.forEach(u => {
+        if (u.name === currentUser.name) return;
+
+        const name = u.name.toLowerCase();
+        const tech = (u.tech || '').toLowerCase();
+        if (q && !name.includes(q) && !tech.includes(q)) return;
+        if (roleFilter && u.role !== roleFilter) return;
+
+        const isFav = currentUser.fav?.includes(u.name) ?? false;
+        const avatar = u.avatar || 'img/DockLee.png';
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+            <img src="${avatar}" onerror="this.src='img/DockLee.png'">
             <div class="card-info">
                 <h3>${u.name}</h3>
                 <p>${u.role}<br><span style="color:#777;font-size:15px;">${u.tech}</span></p>
             </div>
             <div class="card-actions">
-                <img src="${isFav?'Red.png':'Heart.png'}"
+                <img src="img/${isFav ? 'Red.png' : 'Heart.png'}"
                      onclick="toggleFav('${u.name}', this)"
                      style="filter:${isFav?'none':'grayscale(100%)'};">
-                <img src="Comment.png" onclick="openChat('${u.name}')">
+                <img src="img/Comment.png" onclick="openChat('${u.name}')">
             </div>
         `;
         list.appendChild(div);
     });
 }
 
-function toggleFav(name, el){
-    let users=getAllUsers();
-    const me=users.find(u=>u.name===currentUser.name);
-    const idx=me.fav?.indexOf(name)??-1;
-    if(idx===-1){
-        me.fav=[...(me.fav||[]), name];
-        el.src="Red.png";
-        el.style.filter="none";
-    } else {
-        me.fav.splice(idx,1);
-        el.src="Heart.png";
-        el.style.filter="grayscale(100%)";
-    }
-    saveAllUsers(users);
-    currentUser=me;
-    localStorage.setItem('inf_current_v3', JSON.stringify(me));
+async function toggleFav(name, el) {
+    const res = await fetch('/toggle_fav', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser.name, fav: name })
+    });
+    const data = await res.json();
+    currentUser = data.user;
+    localStorage.setItem('inf_current', JSON.stringify(currentUser));
+    el.src = currentUser.fav.includes(name) ? 'img/Red.png' : 'img/Heart.png';
+    el.style.filter = currentUser.fav.includes(name) ? 'none' : 'grayscale(100%)';
     renderFavorites();
 }
 
-function renderFavorites(){
-    const list=document.getElementById('favList');
-    list.innerHTML='';
-    const favs=currentUser?.fav||[];
-    if(!favs.length){
-        list.innerHTML='<p style="text-align:center;color:#777;font-size:20px;margin-top:50px;">Пока никого нет в избранном</p>';
+async function renderFavorites() {
+    const list = document.getElementById('favList');
+    list.innerHTML = '';
+    const favs = currentUser?.fav || [];
+    if (!favs.length) {
+        list.innerHTML = '<p style="text-align:center;color:#777;font-size:20px;margin-top:50px;">Пока никого нет в избранном</p>';
         return;
     }
-    getAllUsers().forEach(u=>{
-        if(favs.includes(u.name)){
-            const div=document.createElement('div');
-            div.className='card';
-            div.innerHTML=`<img src="${u.avatar}"><div class="card-info"><h3>${u.name}</h3><p>${u.role}<br><span style="color:#777;font-size:15px;">${u.tech}</span></p></div>`;
+
+    const allUsers = await fetchAllUsers();
+    allUsers.forEach(u => {
+        if (favs.includes(u.name)) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<img src="${u.avatar || 'img/DockLee.png'}"><div class="card-info"><h3>${u.name}</h3><p>${u.role}<br><span style="color:#777;font-size:15px;">${u.tech}</span></p></div>`;
             list.appendChild(div);
         }
     });
 }
 
-function renderChatList(){
-    const list=document.getElementById('chatList');
-    list.innerHTML='';
-    getAllUsers().forEach(u=>{
-        if(u.name===currentUser.name) return;
-        const div=document.createElement('div');
-        div.className='card';
-        div.style.cursor='pointer';
-        div.onclick=()=>openChat(u.name);
-        div.innerHTML=`<img src="${u.avatar}"><div class="card-info"><h3>${u.name}</h3><p>Нажмите, чтобы написать</p></div>`;
+async function renderChatList() {
+    const list = document.getElementById('chatList');
+    list.innerHTML = '';
+    const allUsers = await fetchAllUsers();
+    allUsers.forEach(u => {
+        if (u.name === currentUser.name) return;
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.style.cursor = 'pointer';
+        div.onclick = () => openChat(u.name);
+        div.innerHTML = `<img src="${u.avatar || 'img/DockLee.png'}"><div class="card-info"><h3>${u.name}</h3><p>Нажмите, чтобы написать</p></div>`;
         list.appendChild(div);
     });
 }
 
-function openChat(name){
-    const user=getAllUsers().find(u=>u.name===name);
-    currentChatWith=name;
-    document.getElementById('chatAvatar').src=user.avatar;
-    document.getElementById('chatName').textContent=name;
+async function openChat(name) {
+    currentChatWith = name;
+    const allUsers = await fetchAllUsers();
+    const user = allUsers.find(u => u.name === name);
+    document.getElementById('chatAvatar').src = user.avatar || 'img/DockLee.png';
+    document.getElementById('chatName').textContent = name;
     showPage('chatOpen');
     loadMessages();
 }
 
-function loadMessages(){
-    const div=document.getElementById('messages');
-    div.innerHTML='';
-    const msgs=getMessages().filter(m=>
-        (m.from===currentUser.name && m.to===currentChatWith) ||
-        (m.from===currentChatWith && m.to===currentUser.name)
-    );
-    msgs.forEach(m=>{
-        const el=document.createElement('div');
-        el.className='message '+(m.from===currentUser.name?'me':'other');
-        el.textContent=m.text;
-        div.appendChild(el);
-    });
-    div.scrollTop=div.scrollHeight;
+async function loadMessages() {
+    const div = document.getElementById('messages');
+    div.innerHTML = '';
+    const res = await fetch('/messages');
+    const msgs = await res.json();
+    msgs.filter(m => (m.from === currentUser.name && m.to === currentChatWith) ||
+                      (m.from === currentChatWith && m.to === currentUser.name))
+        .forEach(m => {
+            const el = document.createElement('div');
+            el.className = 'message ' + (m.from === currentUser.name ? 'me' : 'other');
+            el.textContent = m.text;
+            div.appendChild(el);
+        });
+    div.scrollTop = div.scrollHeight;
 }
 
-function sendMessage(){
-    const input=document.getElementById('msgInput');
-    const text=input.value.trim();
-    if(!text) return;
-    const msgs=getMessages();
-    msgs.push({from:currentUser.name,to:currentChatWith,text,time:Date.now()});
-    saveMessages(msgs);
-    input.value='';
+async function sendMessage() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    await fetch('/send_message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: currentUser.name, to: currentChatWith, text })
+    });
+    input.value = '';
     loadMessages();
 }
 
-function renderProfile(){
-    document.getElementById('profName').textContent=currentUser?.name||'—';
-    document.getElementById('profRole').textContent=currentUser?.role||'—';
-    document.getElementById('profTech').textContent=currentUser?.tech||'—';
+function renderProfile() {
+    document.getElementById('profName').textContent = currentUser?.name || '—';
+    document.getElementById('profRole').textContent = currentUser?.role || '—';
+    document.getElementById('profTech').textContent = currentUser?.tech || '—';
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-    const input=document.getElementById('searchInput');
-    const role=document.getElementById('filterRole');
-    if(input) input.addEventListener('input',renderUsers);
-    if(role) role.addEventListener('change',renderUsers);
-    renderUsers();
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('inf_current');
+    if (saved) {
+        currentUser = JSON.parse(saved);
+        showPage('main');
+    } else {
+        showPage('login');
+    }
+
+    document.getElementById('searchInput')?.addEventListener('input', renderUsers);
+    document.getElementById('filterRole')?.addEventListener('change', renderUsers);
 });
